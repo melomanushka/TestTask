@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сортировка пузырьком</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        #results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .step {
+            margin: 8px 0;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 5px;
+            border-left: 3px solid #4CAF50;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            border-left-color: #d32f2f;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .success {
+            color: #2e7d32;
+            background-color: #e8f5e8;
+            border-left-color: #2e7d32;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .session-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .array-display {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .steps-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background: white;
+        }
+        
+        @media (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔢 Алгоритм сортировки пузырьком</h1>
+        
+        <div class="input-group">
+            <label for="inputArray">Введите числа для сортировки (через запятую):</label>
+            <input type="text" id="inputArray" placeholder="Например: 64, 34, 25, 12, 22, 11, 90">
+            <div class="button-group">
+                <button onclick="sortArray()" id="sortBtn">🚀 Сортировать</button>
+                <button onclick="generateRandomArray()">🎲 Случайный массив</button>
+                <button onclick="clearAll()">🗑️ Очистить</button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="sessionId">ID сессии для получения результата:</label>
+            <input type="text" id="sessionId" placeholder="Вставьте ID сессии сюда">
+            <div class="button-group">
+                <button onclick="getResult()">📊 Получить результат</button>
+                <button onclick="getSteps()">👁️ Показать все шаги</button>
+            </div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5050';
+        
+        function showLoading() {
+            document.getElementById('results').innerHTML = '<div class="loading">⏳ Загрузка...</div>';
+        }
+        
+        function showError(message) {
+            document.getElementById('results').innerHTML = `<div class="error">❌ Ошибка: ${message}</div>`;
+        }
+        
+        function generateRandomArray() {
+            const length = Math.floor(Math.random() * 8) + 5; // 5-12 элементов
+            const array = [];
+            for (let i = 0; i < length; i++) {
+                array.push(Math.floor(Math.random() * 100) + 1); // 1-100
+            }
+            document.getElementById('inputArray').value = array.join(', ');
+        }
+        
+        function clearAll() {
+            document.getElementById('inputArray').value = '';
+            document.getElementById('sessionId').value = '';
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        function validateInput(input) {
+            if (!input.trim()) {
+                throw new Error('Пожалуйста, введите числа');
+            }
+            
+            const numbers = input.split(',').map(s => {
+                const num = parseFloat(s.trim());
+                if (isNaN(num)) {
+                    throw new Error(`"${s.trim()}" не является числом`);
+                }
+                return num;
+            });
+            
+            if (numbers.length === 0) {
+                throw new Error('Массив не может быть пустым');
+            }
+            
+            return numbers;
+        }
+        
+        async function sortArray() {
+            const input = document.getElementById('inputArray').value;
+            const sortBtn = document.getElementById('sortBtn');
+            
+            try {
+                sortBtn.disabled = true;
+                showLoading();
+                
+                const numbers = validateInput(input);
+                
+                const response = await fetch(`${API_BASE}/sort`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numbers })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка сервера');
+                }
+                
+                const result = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="success">✅ ${result.message}</div>
+                    <div class="session-info">
+                        <h3>📋 Информация о сессии</h3>
+                        <p><strong>🆔 ID сессии:</strong> <code>${result.sessionId}</code></p>
+                        <p><strong>📊 Количество шагов:</strong> ${result.steps}</p>
+                        <p><strong>🔢 Отсортированный массив:</strong></p>
+                        <div class="array-display">[${result.finalArray.join(', ')}]</div>
+                    </div>
+                `;
+                
+                // Автоматически заполнить поле ID сессии
+                document.getElementById('sessionId').value = result.sessionId;
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                sortBtn.disabled = false;
+            }
+        }
+        
+        async function getResult() {
+            const sessionId = document.getElementById('sessionId').value.trim();
+            
+            if (!sessionId) {
+                showError('Введите ID сессии');
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const response = await fetch(`${API_BASE}/sort/${sessionId}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка сервера');
+                }
+                
+                const result = await response.json();
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="success">✅ Результат найден</div>
+                    <div class="session-info">
+                        <h3>📊 Результат сессии: ${sessionId}</h3>
+                        <p><strong>📥 Исходный массив:</strong></p>
+                        <div class="array-display">[${result.originalArray.join(', ')}]</div>
+                        <p><strong>📤 Отсортированный массив:</strong></p>
+                        <div class="array-display">[${result.sortedArray.join(', ')}]</div>
+                        <p><strong>🔢 Всего шагов:</strong> ${result.totalSteps}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        async function getSteps() {
+            const sessionId = document.getElementById('sessionId').value.trim();
+            
+            if (!sessionId) {
+                showError('Введите ID сессии');
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const response = await fetch(`${API_BASE}/sort/${sessionId}/steps`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка сервера');
+                }
+                
+                const steps = await response.json();
+                
+                let html = `
+                    <div class="success">✅ Шаги сортировки загружены</div>
+                    <h3>👁️ Все шаги сортировки для сессии: ${sessionId}</h3>
+                    <p>Всего шагов: ${steps.length}</p>
+                    <div class="steps-container">
+                `;
+                
+                steps.forEach((step, index) => {
+                    const isInitial = step.step === 0;
+                    const stepLabel = isInitial ? 'Начальное состояние' : `Шаг ${step.step}`;
+                    html += `<div class="step">${stepLabel}: [${step.array.join(', ')}]</div>`;
+                });
+                
+                html += '</div>';
+                document.getElementById('results').innerHTML = html;
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        // Обработка Enter в полях ввода
+        document.getElementById('inputArray').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sortArray();
+            }
+        });
+        
+        document.getElementById('sessionId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getResult();
+            }
+        });
+        
+        // Загрузка примера при загрузке страницы
+        window.addEventListener('load', function() {
+            document.getElementById('inputArray').value = '64, 34, 25, 12, 22, 11, 90';
+        });
+    </script>
+</body>
+</html>
