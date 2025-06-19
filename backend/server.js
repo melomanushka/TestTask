@@ -1,231 +1,189 @@
+require('dotenv').config();
+
 const express = require('express');
-const { Sequelize, DataTypes } = require('sequelize');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const compression = require('compression');
+const path = require('path');
+const fs = require('fs');
 
-// Подключение к PostgreSQL
-const sequelize = new Sequelize({
-  dialect: 'postgres',
-  database: 'sort_db',
-  username: 'postgres',
-  password: 'i_L0ve_y_3000',
-  host: 'localhost',
-  port: 5432,
-  logging: false // Отключаем логирование SQL запросов
-});
+// Import configurations and middleware
+const { sequelize, testConnection } = require('./config/database');
+const logger = require('./config/logger');
+const { generalLimiter } = require('./middleware/rateLimiter');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
 
-// Модель для сессий сортировки
-const Session = sequelize.define('Session', {
-  sessionId: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    unique: true,
-    allowNull: false
-  },
-  originalArray: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: false
-  },
-  sortedArray: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: false
-  },
-  totalSteps: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-});
+// Import routes
+const sortRoutes = require('./routes/sort');
+const sessionRoutes = require('./routes/sessions');
 
-// Модель для шагов сортировки
-const Step = sequelize.define('Step', {
-  sessionId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: Session,
-      key: 'sessionId'
-    }
-  },
-  stepNumber: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  arrayState: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: false
-  }
-});
-
-// Связи между моделями
-Session.hasMany(Step, { foreignKey: 'sessionId', sourceKey: 'sessionId' });
-Step.belongsTo(Session, { foreignKey: 'sessionId', targetKey: 'sessionId' });
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Функция сортировки пузырьком с сохранением шагов
-function bubbleSort(arr) {
-  const steps = [];
-  const sortedArray = [...arr]; // Создаем копию массива
-  
-  // Добавляем начальное состояние
-  steps.push([...sortedArray]);
-  
-  for (let i = 0; i < sortedArray.length - 1; i++) {
-    for (let j = 0; j < sortedArray.length - 1 - i; j++) {
-      if (sortedArray[j] > sortedArray[j + 1]) {
-        // Меняем местами элементы
-        [sortedArray[j], sortedArray[j + 1]] = [sortedArray[j + 1], sortedArray[j]];
-        // Сохраняем текущее состояние массива
-        steps.push([...sortedArray]);
-      }
-    }
-  }
-  
-  return { steps, sortedArray };
+// Create logs directory if it doesn't exist
+const logsDir = path.join(__dirname, '../logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Маршрут для сортировки массива
-app.post('/sort', async (req, res) => {
-  try {
-    const { numbers } = req.body;
-    
-    if (!numbers || !Array.isArray(numbers)) {
-      return res.status(400).json({ error: 'Требуется массив чисел' });
-    }
-    
-    // Проверяем, что все элементы являются числами
-    if (!numbers.every(num => typeof num === 'number' && !isNaN(num))) {
-      return res.status(400).json({ error: 'Все элементы должны быть числами' });
-    }
-    
-    // Выполняем сортировку
-    const { steps, sortedArray } = bubbleSort(numbers);
-    const sessionId = uuidv4();
-    
-    // Сохраняем сессию в БД
-    await Session.create({
-      sessionId,
-      originalArray: numbers,
-      sortedArray,
-      totalSteps: steps.length - 1 // Вычитаем начальное состояние
-    });
-    
-    // Сохраняем шаги в БД
-    const stepRecords = steps.map((arrayState, index) => ({
-      sessionId,
-      stepNumber: index,
-      arrayState
-    }));
-    
-    await Step.bulkCreate(stepRecords);
-    
-    res.json({
-      sessionId,
-      steps: steps.length - 1,
-      finalArray: sortedArray,
-      message: 'Сортировка выполнена успешно'
-    });
-    
-  } catch (error) {
-    console.error('Ошибка при сортировке:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  }
-});
+const app = express();
+const PORT = process.env.PORT || 5050;
 
-// Маршрут для получения результата по ID сессии
-app.get('/sort/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    
-    const session = await Session.findOne({
-      where: { sessionId }
-    });
-    
-    if (!session) {
-      return res.status(404).json({ error: 'Сессия не найдена' });
-    }
-    
-    res.json({
-      sessionId: session.sessionId,
-      originalArray: session.originalArray,
-      sortedArray: session.sortedArray,
-      totalSteps: session.totalSteps
-    });
-    
-  } catch (error) {
-    console.error('Ошибка при получении результата:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  }
-});
+// Trust proxy for rate limiting and IP detection
+app.set('trust proxy', 1);
 
-// Маршрут для получения всех шагов сортировки
-app.get('/sort/:sessionId/steps', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    
-    // Проверяем существование сессии
-    const session = await Session.findOne({
-      where: { sessionId }
-    });
-    
-    if (!session) {
-      return res.status(404).json({ error: 'Сессия не найдена' });
-    }
-    
-    // Получаем все шаги сортировки
-    const steps = await Step.findAll({
-      where: { sessionId },
-      order: [['stepNumber', 'ASC']]
-    });
-    
-    const formattedSteps = steps.map(step => ({
-      step: step.stepNumber,
-      array: step.arrayState
-    }));
-    
-    res.json(formattedSteps);
-    
-  } catch (error) {
-    console.error('Ошибка при получении шагов:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  }
-});
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow for development
+  crossOriginEmbedderPolicy: false
+}));
 
-// Маршрут для получения всех сессий (дополнительный)
-app.get('/sessions', async (req, res) => {
-  try {
-    const sessions = await Session.findAll({
-      order: [['createdAt', 'DESC']],
-      limit: 50 // Ограничиваем количество результатов
-    });
-    
-    res.json(sessions);
-    
-  } catch (error) {
-    console.error('Ошибка при получении сессий:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-  }
-});
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com'] // Replace with your production domain
+    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8080'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 
-// Обработка ошибок подключения к БД
-sequelize.authenticate()
-  .then(() => {
-    console.log('Подключение к базе данных установлено успешно');
-  })
-  .catch(err => {
-    console.error('Не удалось подключиться к базе данных:', err);
+// Compression middleware
+app.use(compression());
+
+// Request parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Custom morgan format for structured logging
+morgan.token('id', (req) => req.ip);
+const morganFormat = process.env.NODE_ENV === 'production'
+  ? 'combined'
+  : ':method :url :status :res[content-length] - :response-time ms';
+
+app.use(morgan(morganFormat, {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
+// Rate limiting
+app.use(generalLimiter);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    version: require('../package.json').version
   });
+});
 
-// Запуск сервера
-sequelize.sync({ alter: true })
-  .then(() => {
-    app.listen(5050, () => {
-      console.log('Сервер запущен на порту 5050');
-      console.log('API доступно по адресу: http://localhost:5050');
-    });
-  })
-  .catch(err => {
-    console.error('Ошибка при синхронизации с базой данных:', err);
+// API info endpoint
+app.get('/api/info', (req, res) => {
+  res.json({
+    name: 'Bubble Sort API',
+    version: require('../package.json').version,
+    description: 'Secure API for sorting algorithms with step-by-step tracking',
+    algorithms: ['bubble', 'quick', 'selection', 'insertion'],
+    limits: {
+      maxArraySize: parseInt(process.env.MAX_ARRAY_SIZE) || 1000,
+      maxArrayValue: parseInt(process.env.MAX_ARRAY_VALUE) || 10000,
+      minArrayValue: parseInt(process.env.MIN_ARRAY_VALUE) || -10000,
+      rateLimit: {
+        general: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10,
+        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000
+      }
+    },
+    endpoints: {
+      'POST /api/sort': 'Sort an array with specified algorithm',
+      'GET /api/sort/:sessionId': 'Get sorting result by session ID',
+      'GET /api/sort/:sessionId/steps': 'Get all sorting steps',
+      'GET /api/sort/:sessionId/compare': 'Compare with other algorithms',
+      'GET /api/sessions': 'Get all sessions with pagination',
+      'GET /api/sessions/stats': 'Get statistics about sessions',
+      'DELETE /api/sessions/cleanup': 'Clean up old sessions'
+    }
   });
+});
+
+// API routes
+app.use('/api/sort', sortRoutes);
+app.use('/api/sessions', sessionRoutes);
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  });
+}
+
+// 404 handler
+app.use(notFound);
+
+// Error handling middleware
+app.use(errorHandler);
+
+// Graceful shutdown handler
+const gracefulShutdown = (signal) => {
+  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+  
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Unhandled promise rejection handler
+process.on('unhandledRejection', (err) => {
+  logger.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
+
+// Uncaught exception handler
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Test database connection
+    await testConnection();
+    
+    // Sync database models
+    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    logger.info('Database synchronized successfully');
+    
+    // Start HTTP server
+    const server = app.listen(PORT, () => {
+      logger.info(`Server started successfully`, {
+        port: PORT,
+        environment: process.env.NODE_ENV,
+        pid: process.pid
+      });
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 API documentation available at http://localhost:${PORT}/api/info`);
+      console.log(`❤️  Health check available at http://localhost:${PORT}/health`);
+    });
+
+    // Handle server shutdown
+    process.on('SIGTERM', () => {
+      logger.info('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        logger.info('Process terminated');
+        sequelize.close();
+      });
+    });
+
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the application
+startServer();
