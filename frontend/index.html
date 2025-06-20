@@ -3,367 +3,1458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Сортировка пузырьком</title>
+    <title>Продвинутый алгоритм сортировки</title>
     <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-dark: #45a049;
+            --secondary-color: #2196F3;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --success-color: #4caf50;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-muted: #666666;
+            --border-color: #dddddd;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --text-muted: #cccccc;
+            --border-color: #444444;
+            --shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
+
+        .header {
             text-align: center;
-            color: #333;
             margin-bottom: 30px;
+            position: relative;
         }
-        
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
         .input-group {
             margin-bottom: 20px;
         }
-        
+
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
         }
-        
-        input[type="text"] {
+
+        input[type="text"], input[type="number"], select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
             font-size: 16px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
-        
-        input[type="text"]:focus {
-            border-color: #4CAF50;
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
             outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
         }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        
+
         .button-group {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
-        
-        #results {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            border-left: 4px solid #4CAF50;
+
+        button {
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        
-        .step {
-            margin: 8px 0;
-            padding: 10px;
-            background: #e8f5e8;
-            border-radius: 5px;
-            border-left: 3px solid #4CAF50;
-            font-family: 'Courier New', monospace;
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
-        
-        .error {
-            color: #d32f2f;
-            background-color: #ffebee;
-            border-left-color: #d32f2f;
-            padding: 15px;
-            border-radius: 5px;
+
+        button:active {
+            transform: translateY(0);
         }
-        
-        .success {
-            color: #2e7d32;
-            background-color: #e8f5e8;
-            border-left-color: #2e7d32;
-            padding: 15px;
-            border-radius: 5px;
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
+
+        .btn-secondary {
+            background: linear-gradient(45deg, var(--secondary-color), #1976D2);
         }
-        
-        .session-info {
-            background-color: #e3f2fd;
-            padding: 15px;
-            border-radius: 5px;
+
+        .btn-secondary:hover {
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, var(--danger-color), #d32f2f);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
             margin: 15px 0;
-            border-left: 4px solid #2196F3;
+            display: none;
         }
-        
-        .array-display {
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-success {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-error {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert-info {
+            background: rgba(33, 150, 243, 0.1);
+            border-color: var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .visualization-container {
+            min-height: 300px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            background: var(--card-bg);
+        }
+
+        .array-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 250px;
+            padding: 20px;
+            justify-content: center;
+        }
+
+        .bar {
+            background: linear-gradient(to top, var(--primary-color), var(--secondary-color));
+            min-width: 15px;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            color: white;
             font-weight: bold;
-            color: #333;
+            font-size: 10px;
+            padding-bottom: 3px;
+            cursor: pointer;
         }
-        
+
+        .bar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .bar.comparing {
+            background: linear-gradient(to top, var(--warning-color), #ff6f00);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+
+        .bar.swapping {
+            background: linear-gradient(to top, var(--danger-color), #c62828);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .bar.sorted {
+            background: linear-gradient(to top, var(--success-color), #2e7d32);
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) scale(1.1); }
+            25% { transform: translateX(-3px) scale(1.1); }
+            75% { transform: translateX(3px) scale(1.1); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .comparison-table thead,
+        .comparison-table tbody {
+            display: table;
+            width: 100%;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .comparison-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(76, 175, 80, 0.1);
+        }
+
         .steps-container {
             max-height: 400px;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 15px;
-            background: white;
+            background: var(--card-bg);
         }
-        
+
+        .step {
+            margin: 8px 0;
+            padding: 12px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .step:hover {
+            transform: translateX(5px);
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .step.current {
+            background: rgba(33, 150, 243, 0.2);
+            border-left-color: var(--secondary-color);
+            animation: highlight 1s ease-in-out;
+        }
+
+        @keyframes highlight {
+            0%, 100% { background: rgba(33, 150, 243, 0.2); }
+            50% { background: rgba(33, 150, 243, 0.4); }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .controls-panel {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .speed-slider {
+            width: 100px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: var(--text-muted);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: var(--danger-color);
+        }
+
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
             .button-group {
                 flex-direction: column;
             }
             
-            button {
-                width: 100%;
+            .theme-toggle {
+                position: static;
+                margin: 10px auto;
+                display: block;
+                width: fit-content;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-table {
+                font-size: 12px;
+            }
+
+            .controls-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .bar {
+                min-width: 12px;
+                font-size: 8px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔢 Алгоритм сортировки пузырьком</h1>
-        
-        <div class="input-group">
-            <label for="inputArray">Введите числа для сортировки (через запятую):</label>
-            <input type="text" id="inputArray" placeholder="Например: 64, 34, 25, 12, 22, 11, 90">
-            <div class="button-group">
-                <button onclick="sortArray()" id="sortBtn">🚀 Сортировать</button>
-                <button onclick="generateRandomArray()">🎲 Случайный массив</button>
-                <button onclick="clearAll()">🗑️ Очистить</button>
+        <div class="header">
+            <h1>🚀 Продвинутые алгоритмы сортировки</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span> Тема
+            </button>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>📊 Сортировка массива</h2>
+                <div class="input-group">
+                    <label for="inputArray">Введите числа для сортировки:</label>
+                    <input type="text" id="inputArray" placeholder="Например: 64, 34, 25, 12, 22, 11, 90" value="64, 34, 25, 12, 22, 11, 90">
+                </div>
+                
+                <div class="input-group">
+                    <label for="algorithm">Выберите алгоритм:</label>
+                    <select id="algorithm">
+                        <option value="bubble">Пузырьковая сортировка</option>
+                        <option value="selection">Сортировка выбором</option>
+                        <option value="insertion">Сортировка вставками</option>
+                        <option value="quick">Быстрая сортировка</option>
+                        <option value="merge">Сортировка слиянием</option>
+                        <option value="heap">Пирамидальная сортировка</option>
+                    </select>
+                </div>
+                
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="sortArray()" id="sortBtn">🚀 Сортировать</button>
+                    <button onclick="generateRandomArray()" class="btn-secondary">🎲 Случайный массив</button>
+                    <button onclick="showComparisonModal()" class="btn-secondary">⚡ Сравнить алгоритмы</button>
+                    <button onclick="clearAll()" class="btn-danger">🗑️ Очистить</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🎛️ Генератор данных</h2>
+                <div class="input-group">
+                    <label for="arraySize">Размер массива:</label>
+                    <input type="number" id="arraySize" min="5" max="50" value="10">
+                </div>
+                
+                <div class="input-group">
+                    <label for="dataType">Тип данных:</label>
+                    <select id="dataType">
+                        <option value="random">Случайные числа</option>
+                        <option value="reversed">Убывающая последовательность</option>
+                        <option value="sorted">Возрастающая последовательность</option>
+                        <option value="duplicates">С дубликатами</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="generateCustomArray()" class="btn-secondary">🎯 Генерировать</button>
+                    <button onclick="exportArray()" class="btn-secondary">📄 Экспорт</button>
+                </div>
             </div>
         </div>
-        
-        <div class="input-group">
-            <label for="sessionId">ID сессии для получения результата:</label>
-            <input type="text" id="sessionId" placeholder="Вставьте ID сессии сюда">
-            <div class="button-group">
-                <button onclick="getResult()">📊 Получить результат</button>
-                <button onclick="getSteps()">👁️ Показать все шаги</button>
+
+        <div class="card">
+            <h2>🎨 Визуализация сортировки</h2>
+            <div class="controls-panel">
+                <div class="speed-control">
+                    <label for="speedSlider">Скорость:</label>
+                    <input type="range" id="speedSlider" class="speed-slider" min="1" max="10" value="5">
+                    <span id="speedValue">5</span>
+                </div>
+                <button onclick="startVisualization()" id="visualizeBtn" class="btn-secondary">🎬 Запустить</button>
+                <button onclick="pauseVisualization()" id="pauseBtn" class="btn-secondary" disabled>⏸️ Пауза</button>
+                <button onclick="stepVisualization()" id="stepBtn" class="btn-secondary" disabled>👣 Шаг</button>
+                <button onclick="resetVisualization()" class="btn-danger">🔄 Сброс</button>
+            </div>
+            
+            <div class="visualization-container" id="visualizationContainer">
+                <div class="loading">
+                    <div>Введите массив и запустите сортировку для просмотра анимации</div>
+                </div>
             </div>
         </div>
-        
+
         <div id="results"></div>
+        <div id="stepsContainer"></div>
+    </div>
+
+    <!-- Modal для сравнения алгоритмов -->
+    <div id="comparisonModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeComparisonModal()">&times;</span>
+            <h2>⚡ Сравнение алгоритмов сортировки</h2>
+            <div id="comparisonResults"></div>
+        </div>
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:5050';
-        
-        function showLoading() {
-            document.getElementById('results').innerHTML = '<div class="loading">⏳ Загрузка...</div>';
+        let currentArray = [];
+        let originalArray = [];
+        let visualizationSteps = [];
+        let currentStepIndex = 0;
+        let isVisualizing = false;
+        let isPaused = false;
+        let visualizationInterval = null;
+        let sortingStats = {};
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            setupSpeedControl();
+            updateVisualization();
+        });
+
+        // Тема
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            
+            // Сохраняем тему в переменной (без localStorage)
+            window.currentTheme = newTheme;
         }
-        
-        function showError(message) {
-            document.getElementById('results').innerHTML = `<div class="error">❌ Ошибка: ${message}</div>`;
+
+        function loadTheme() {
+            const savedTheme = window.currentTheme || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
         }
-        
+
+        function setupSpeedControl() {
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            
+            speedSlider.addEventListener('input', function() {
+                speedValue.textContent = this.value;
+            });
+        }
+
+        // Утилиты
+        function parseArray(input) {
+            if (!input.trim()) return [];
+            return input.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+        }
+
+        function showAlert(message, type = 'info') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(alert, container.firstChild);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Генерация массивов
         function generateRandomArray() {
-            const length = Math.floor(Math.random() * 8) + 5; // 5-12 элементов
+            const size = Math.floor(Math.random() * 15) + 8;
             const array = [];
-            for (let i = 0; i < length; i++) {
-                array.push(Math.floor(Math.random() * 100) + 1); // 1-100
+            for (let i = 0; i < size; i++) {
+                array.push(Math.floor(Math.random() * 100) + 1);
             }
             document.getElementById('inputArray').value = array.join(', ');
+            showToast('Сгенерирован случайный массив!');
         }
-        
-        function clearAll() {
-            document.getElementById('inputArray').value = '';
-            document.getElementById('sessionId').value = '';
-            document.getElementById('results').innerHTML = '';
-        }
-        
-        function validateInput(input) {
-            if (!input.trim()) {
-                throw new Error('Пожалуйста, введите числа');
+
+        function generateCustomArray() {
+            const size = parseInt(document.getElementById('arraySize').value);
+            const type = document.getElementById('dataType').value;
+            let array = [];
+
+            switch (type) {
+                case 'random':
+                    for (let i = 0; i < size; i++) {
+                        array.push(Math.floor(Math.random() * 100) + 1);
+                    }
+                    break;
+                case 'reversed':
+                    for (let i = size; i > 0; i--) {
+                        array.push(i * 2);
+                    }
+                    break;
+                case 'sorted':
+                    for (let i = 1; i <= size; i++) {
+                        array.push(i * 2);
+                    }
+                    break;
+                case 'duplicates':
+                    const values = [10, 20, 30, 40, 50];
+                    for (let i = 0; i < size; i++) {
+                        array.push(values[Math.floor(Math.random() * values.length)]);
+                    }
+                    break;
             }
-            
-            const numbers = input.split(',').map(s => {
-                const num = parseFloat(s.trim());
-                if (isNaN(num)) {
-                    throw new Error(`"${s.trim()}" не является числом`);
+
+            document.getElementById('inputArray').value = array.join(', ');
+            showToast(`Сгенерирован массив типа "${type}"!`);
+        }
+
+        // Алгоритмы сортировки с записью шагов
+        function bubbleSort(arr, recordSteps = false) {
+            const steps = [];
+            const result = [...arr];
+            let comparisons = 0;
+            let swaps = 0;
+
+            for (let i = 0; i < result.length - 1; i++) {
+                for (let j = 0; j < result.length - i - 1; j++) {
+                    comparisons++;
+                    if (recordSteps) {
+                        steps.push({
+                            type: 'compare',
+                            indices: [j, j + 1],
+                            array: [...result],
+                            description: `Сравниваем элементы ${result[j]} и ${result[j + 1]}`
+                        });
+                    }
+
+                    if (result[j] > result[j + 1]) {
+                        [result[j], result[j + 1]] = [result[j + 1], result[j]];
+                        swaps++;
+                        
+                        if (recordSteps) {
+                            steps.push({
+                                type: 'swap',
+                                indices: [j, j + 1],
+                                array: [...result],
+                                description: `Меняем местами ${result[j + 1]} и ${result[j]}`
+                            });
+                        }
+                    }
                 }
-                return num;
-            });
-            
-            if (numbers.length === 0) {
-                throw new Error('Массив не может быть пустым');
+            }
+
+            return { sorted: result, steps, stats: { comparisons, swaps } };
+        }
+
+        function quickSort(arr, recordSteps = false, low = 0, high = arr.length - 1, steps = [], stats = { comparisons: 0, swaps: 0 }) {
+            if (low < high) {
+                const pi = partition(arr, low, high, recordSteps, steps, stats);
+                quickSort(arr, recordSteps, low, pi - 1, steps, stats);
+                quickSort(arr, recordSteps, pi + 1, high, steps, stats);
             }
             
-            return numbers;
+            if (low === 0 && high === arr.length - 1) {
+                return { sorted: arr, steps, stats };
+            }
+            return arr;
         }
-        
-        async function sortArray() {
+
+        function partition(arr, low, high, recordSteps, steps, stats) {
+            const pivot = arr[high];
+            let i = low - 1;
+
+            for (let j = low; j < high; j++) {
+                stats.comparisons++;
+                if (recordSteps) {
+                    steps.push({
+                        type: 'compare',
+                        indices: [j, high],
+                        array: [...arr],
+                        description: `Сравниваем ${arr[j]} с опорным элементом ${pivot}`
+                    });
+                }
+
+                if (arr[j] < pivot) {
+                    i++;
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                    stats.swaps++;
+                    
+                    if (recordSteps) {
+                        steps.push({
+                            type: 'swap',
+                            indices: [i, j],
+                            array: [...arr],
+                            description: `Меняем местами ${arr[j]} и ${arr[i]}`
+                        });
+                    }
+                }
+            }
+
+            [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+            stats.swaps++;
+            
+            if (recordSteps) {
+                steps.push({
+                    type: 'swap',
+                    indices: [i + 1, high],
+                    array: [...arr],
+                    description: `Устанавливаем опорный элемент ${pivot} на место`
+                });
+            }
+
+            return i + 1;
+        }
+
+        function selectionSort(arr, recordSteps = false) {
+            const steps = [];
+            const result = [...arr];
+            let comparisons = 0;
+            let swaps = 0;
+
+            for (let i = 0; i < result.length - 1; i++) {
+                let minIdx = i;
+                
+                for (let j = i + 1; j < result.length; j++) {
+                    comparisons++;
+                    if (recordSteps) {
+                        steps.push({
+                            type: 'compare',
+                            indices: [minIdx, j],
+                            array: [...result],
+                            description: `Ищем минимум: сравниваем ${result[minIdx]} и ${result[j]}`
+                        });
+                    }
+
+                    if (result[j] < result[minIdx]) {
+                        minIdx = j;
+                    }
+                }
+
+                if (minIdx !== i) {
+                    [result[i], result[minIdx]] = [result[minIdx], result[i]];
+                    swaps++;
+                    
+                    if (recordSteps) {
+                        steps.push({
+                            type: 'swap',
+                            indices: [i, minIdx],
+                            array: [...result],
+                            description: `Меняем местами ${result[minIdx]} и ${result[i]}`
+                        });
+                    }
+                }
+            }
+
+            return { sorted: result, steps, stats: { comparisons, swaps } };
+        }
+
+        function insertionSort(arr, recordSteps = false) {
+            const steps = [];
+            const result = [...arr];
+            let comparisons = 0;
+            let swaps = 0;
+
+            for (let i = 1; i < result.length; i++) {
+                let key = result[i];
+                let j = i - 1;
+
+                if (recordSteps) {
+                    steps.push({
+                        type: 'compare',
+                        indices: [i],
+                        array: [...result],
+                        description: `Вставляем элемент ${key}`
+                    });
+                }
+
+                while (j >= 0 && result[j] > key) {
+                    comparisons++;
+                    result[j + 1] = result[j];
+                    swaps++;
+                    
+                    if (recordSteps) {
+                        steps.push({
+                            type: 'swap',
+                            indices: [j, j + 1],
+                            array: [...result],
+                            description: `Сдвигаем ${result[j]} вправо`
+                        });
+                    }
+                    j--;
+                }
+                
+                result[j + 1] = key;
+            }
+
+            return { sorted: result, steps, stats: { comparisons, swaps } };
+        }
+
+        // Основная функция сортировки
+        function sortArray() {
             const input = document.getElementById('inputArray').value;
+            const algorithm = document.getElementById('algorithm').value;
+            
+            if (!input.trim()) {
+                showAlert('Пожалуйста, введите числа для сортировки', 'error');
+                return;
+            }
+
+            const array = parseArray(input);
+            if (array.length === 0) {
+                showAlert('Введите корректные числа', 'error');
+                return;
+            }
+
+            currentArray = [...array];
+            originalArray = [...array];
+            
+            showProgress(true);
+            
+            setTimeout(() => {
+                const startTime = performance.now();
+                let result;
+
+                switch (algorithm) {
+                    case 'bubble':
+                        result = bubbleSort(array, true);
+                        break;
+                    case 'quick':
+                        result = quickSort([...array], true);
+                        break;
+                    case 'selection':
+                        result = selectionSort(array, true);
+                        break;
+                    case 'insertion':
+                        result = insertionSort(array, true);
+                        break;
+                    default:
+                        result = bubbleSort(array, true);
+                }
+
+                const endTime = performance.now();
+                const executionTime = (endTime - startTime).toFixed(2);
+
+                visualizationSteps = result.steps;
+                sortingStats = {
+                    ...result.stats,
+                    executionTime,
+                    algorithm: getAlgorithmName(algorithm)
+                };
+
+                showProgress(false);
+                displayResults(result.sorted, result.stats, executionTime, algorithm);
+                showToast('Сортировка завершена!');
+                
+                // Обновляем визуализацию
+                updateVisualization();
+            }, 500);
+        }
+
+        function getAlgorithmName(algorithm) {
+            const names = {
+                'bubble': 'Пузырьковая сортировка',
+                'quick': 'Быстрая сортировка',
+                'selection': 'Сортировка выбором',
+                'insertion': 'Сортировка вставками',
+                'merge': 'Сортировка слиянием',
+                'heap': 'Пирамидальная сортировка'
+            };
+            return names[algorithm] || algorithm;
+        }
+
+        function showProgress(show) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
             const sortBtn = document.getElementById('sortBtn');
             
-            try {
+            if (show) {
+                progressBar.style.display = 'block';
+                progressFill.style.width = '100%';
                 sortBtn.disabled = true;
-                showLoading();
-                
-                const numbers = validateInput(input);
-                
-                const response = await fetch(`${API_BASE}/sort`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ numbers })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Ошибка сервера');
-                }
-                
-                const result = await response.json();
-                
-                document.getElementById('results').innerHTML = `
-                    <div class="success">✅ ${result.message}</div>
-                    <div class="session-info">
-                        <h3>📋 Информация о сессии</h3>
-                        <p><strong>🆔 ID сессии:</strong> <code>${result.sessionId}</code></p>
-                        <p><strong>📊 Количество шагов:</strong> ${result.steps}</p>
-                        <p><strong>🔢 Отсортированный массив:</strong></p>
-                        <div class="array-display">[${result.finalArray.join(', ')}]</div>
-                    </div>
-                `;
-                
-                // Автоматически заполнить поле ID сессии
-                document.getElementById('sessionId').value = result.sessionId;
-                
-            } catch (error) {
-                showError(error.message);
-            } finally {
+                sortBtn.textContent = '⏳ Сортировка...';
+            } else {
+                progressBar.style.display = 'none';
+                progressFill.style.width = '0%';
                 sortBtn.disabled = false;
+                sortBtn.textContent = '🚀 Сортировать';
             }
         }
-        
-        async function getResult() {
-            const sessionId = document.getElementById('sessionId').value.trim();
+
+        function displayResults(sortedArray, stats, executionTime, algorithm) {
+            const resultsDiv = document.getElementById('results');
             
-            if (!sessionId) {
-                showError('Введите ID сессии');
+            resultsDiv.innerHTML = `
+                <div class="card">
+                    <h2>📊 Результаты сортировки</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.comparisons}</div>
+                            <div class="stat-label">Сравнений</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.swaps}</div>
+                            <div class="stat-label">Перестановок</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${executionTime}мс</div>
+                            <div class="stat-label">Время выполнения</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${originalArray.length}</div>
+                            <div class="stat-label">Элементов</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <strong>Исходный массив:</strong> [${originalArray.join(', ')}]<br>
+                        <strong>Отсортированный массив:</strong> [${sortedArray.join(', ')}]<br>
+                        <strong>Алгоритм:</strong> ${getAlgorithmName(algorithm)}
+                    </div>
+                    
+                    <div class="button-group">
+                        <button onclick="showSteps()" class="btn-secondary">👁️ Показать шаги</button>
+                        <button onclick="exportResult('json')" class="btn-secondary">📄 JSON</button>
+                        <button onclick="exportResult('csv')" class="btn-secondary">📊 CSV</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showSteps() {
+            if (!visualizationSteps.length) {
+                showAlert('Нет данных о шагах сортировки', 'error');
                 return;
             }
-            
-            try {
-                showLoading();
-                
-                const response = await fetch(`${API_BASE}/sort/${sessionId}`);
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Ошибка сервера');
-                }
-                
-                const result = await response.json();
-                
-                document.getElementById('results').innerHTML = `
-                    <div class="success">✅ Результат найден</div>
-                    <div class="session-info">
-                        <h3>📊 Результат сессии: ${sessionId}</h3>
-                        <p><strong>📥 Исходный массив:</strong></p>
-                        <div class="array-display">[${result.originalArray.join(', ')}]</div>
-                        <p><strong>📤 Отсортированный массив:</strong></p>
-                        <div class="array-display">[${result.sortedArray.join(', ')}]</div>
-                        <p><strong>🔢 Всего шагов:</strong> ${result.totalSteps}</p>
+
+            const stepsContainer = document.getElementById('stepsContainer');
+            let stepsHtml = `
+                <div class="card">
+                    <h2>👣 Шаги сортировки</h2>
+                    <div class="steps-container">
+            `;
+
+            visualizationSteps.forEach((step, index) => {
+                stepsHtml += `
+                    <div class="step" data-step="${index}">
+                        <strong>Шаг ${index + 1}:</strong> ${step.description}<br>
+                        <small>Массив: [${step.array.join(', ')}]</small>
                     </div>
                 `;
-                
-            } catch (error) {
-                showError(error.message);
-            }
+            });
+
+            stepsHtml += `
+                    </div>
+                </div>
+            `;
+
+            stepsContainer.innerHTML = stepsHtml;
         }
-        
-        async function getSteps() {
-            const sessionId = document.getElementById('sessionId').value.trim();
+
+        // Визуализация
+        function updateVisualization() {
+            const container = document.getElementById('visualizationContainer');
+            const array = currentArray.length ? currentArray : parseArray(document.getElementById('inputArray').value);
             
-            if (!sessionId) {
-                showError('Введите ID сессии');
+            if (!array.length) {
+                container.innerHTML = '<div class="loading"><div>Введите массив и запустите сортировку для просмотра анимации</div></div>';
                 return;
             }
-            
-            try {
-                showLoading();
-                
-                const response = await fetch(`${API_BASE}/sort/${sessionId}/steps`);
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Ошибка сервера');
-                }
-                
-                const steps = await response.json();
-                
-                let html = `
-                    <div class="success">✅ Шаги сортировки загружены</div>
-                    <h3>👁️ Все шаги сортировки для сессии: ${sessionId}</h3>
-                    <p>Всего шагов: ${steps.length}</p>
-                    <div class="steps-container">
+
+            const maxValue = Math.max(...array);
+            const barsHtml = array.map((value, index) => {
+                const height = (value / maxValue) * 200;
+                return `
+                    <div class="bar" 
+                         data-index="${index}" 
+                         data-value="${value}"
+                         style="height: ${height}px; width: ${Math.max(300/array.length, 15)}px;">
+                        ${value}
+                    </div>
                 `;
-                
-                steps.forEach((step, index) => {
-                    const isInitial = step.step === 0;
-                    const stepLabel = isInitial ? 'Начальное состояние' : `Шаг ${step.step}`;
-                    html += `<div class="step">${stepLabel}: [${step.array.join(', ')}]</div>`;
-                });
-                
-                html += '</div>';
-                document.getElementById('results').innerHTML = html;
-                
-            } catch (error) {
-                showError(error.message);
+            }).join('');
+
+            container.innerHTML = `<div class="array-bars">${barsHtml}</div>`;
+        }
+
+        function startVisualization() {
+            if (!visualizationSteps.length) {
+                showAlert('Сначала выполните сортировку для генерации шагов', 'error');
+                return;
+            }
+
+            isVisualizing = true;
+            isPaused = false;
+            currentStepIndex = 0;
+            
+            updateVisualizationControls();
+            runVisualization();
+        }
+
+        function pauseVisualization() {
+            isPaused = !isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            pauseBtn.textContent = isPaused ? '▶️ Продолжить' : '⏸️ Пауза';
+            
+            if (!isPaused) {
+                runVisualization();
             }
         }
-        
-        // Обработка Enter в полях ввода
-        document.getElementById('inputArray').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+
+        function stepVisualization() {
+            if (currentStepIndex < visualizationSteps.length) {
+                executeVisualizationStep(visualizationSteps[currentStepIndex]);
+                currentStepIndex++;
+            }
+        }
+
+        function resetVisualization() {
+            isVisualizing = false;
+            isPaused = false;
+            currentStepIndex = 0;
+            currentArray = [...originalArray];
+            
+            if (visualizationInterval) {
+                clearTimeout(visualizationInterval);
+            }
+            
+            updateVisualization();
+            updateVisualizationControls();
+            showToast('Визуализация сброшена');
+        }
+
+        function runVisualization() {
+            if (!isVisualizing || isPaused || currentStepIndex >= visualizationSteps.length) {
+                if (currentStepIndex >= visualizationSteps.length) {
+                    isVisualizing = false;
+                    updateVisualizationControls();
+                    showToast('Визуализация завершена!');
+                }
+                return;
+            }
+
+            const step = visualizationSteps[currentStepIndex];
+            executeVisualizationStep(step);
+            
+            currentStepIndex++;
+            const speed = parseInt(document.getElementById('speedSlider').value);
+            const delay = 1100 - (speed * 100); // Обратная зависимость для скорости
+            
+            visualizationInterval = setTimeout(runVisualization, delay);
+        }
+
+        function executeVisualizationStep(step) {
+            const bars = document.querySelectorAll('.bar');
+            
+            // Сброс предыдущих стилей
+            bars.forEach(bar => {
+                bar.classList.remove('comparing', 'swapping', 'sorted');
+            });
+
+            // Обновляем массив и высоты
+            currentArray = [...step.array];
+            const maxValue = Math.max(...currentArray);
+            
+            bars.forEach((bar, index) => {
+                const value = currentArray[index];
+                const height = (value / maxValue) * 200;
+                bar.style.height = height + 'px';
+                bar.setAttribute('data-value', value);
+                bar.textContent = value;
+            });
+
+            // Применяем стили для текущего шага
+            if (step.indices) {
+                step.indices.forEach(index => {
+                    if (bars[index]) {
+                        bars[index].classList.add(step.type === 'compare' ? 'comparing' : 'swapping');
+                    }
+                });
+            }
+
+            // Подсвечиваем текущий шаг в списке
+            const steps = document.querySelectorAll('.step');
+            steps.forEach(s => s.classList.remove('current'));
+            const currentStep = document.querySelector(`[data-step="${currentStepIndex}"]`);
+            if (currentStep) {
+                currentStep.classList.add('current');
+                currentStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function updateVisualizationControls() {
+            const visualizeBtn = document.getElementById('visualizeBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stepBtn = document.getElementById('stepBtn');
+
+            if (isVisualizing) {
+                visualizeBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stepBtn.disabled = false;
+            } else {
+                visualizeBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stepBtn.disabled = true;
+                pauseBtn.textContent = '⏸️ Пауза';
+            }
+        }
+
+        // Сравнение алгоритмов
+        function showComparisonModal() {
+            const modal = document.getElementById('comparisonModal');
+            modal.style.display = 'block';
+            compareAlgorithms();
+        }
+
+        function closeComparisonModal() {
+            const modal = document.getElementById('comparisonModal');
+            modal.style.display = 'none';
+        }
+
+        function compareAlgorithms() {
+            const input = document.getElementById('inputArray').value;
+            const array = parseArray(input);
+            
+            if (!array.length) {
+                document.getElementById('comparisonResults').innerHTML = `
+                    <div class="alert alert-error">
+                        Пожалуйста, введите массив для сравнения алгоритмов
+                    </div>
+                `;
+                return;
+            }
+
+            const algorithms = [
+                { key: 'bubble', name: 'Пузырьковая сортировка', func: bubbleSort },
+                { key: 'selection', name: 'Сортировка выбором', func: selectionSort },
+                { key: 'insertion', name: 'Сортировка вставками', func: insertionSort },
+                { key: 'quick', name: 'Быстрая сортировка', func: quickSort }
+            ];
+
+            const results = [];
+
+            algorithms.forEach(alg => {
+                const startTime = performance.now();
+                const result = alg.func([...array], false);
+                const endTime = performance.now();
+                
+                results.push({
+                    name: alg.name,
+                    time: (endTime - startTime).toFixed(2),
+                    comparisons: result.stats?.comparisons || 0,
+                    swaps: result.stats?.swaps || 0
+                });
+            });
+
+            // Сортируем результаты по времени выполнения
+            results.sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
+
+            let tableHtml = `
+                <div class="alert alert-info">
+                    <strong>Тестовый массив:</strong> [${array.join(', ')}] (${array.length} элементов)
+                </div>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Алгоритм</th>
+                            <th>Время (мс)</th>
+                            <th>Сравнения</th>
+                            <th>Перестановки</th>
+                            <th>Эффективность</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            results.forEach((result, index) => {
+                const efficiency = index === 0 ? '🥇 Лучший' : 
+                                index === 1 ? '🥈 Хороший' : 
+                                index === 2 ? '🥉 Средний' : '📊 Базовый';
+                
+                tableHtml += `
+                    <tr>
+                        <td><strong>${result.name}</strong></td>
+                        <td>${result.time}</td>
+                        <td>${result.comparisons}</td>
+                        <td>${result.swaps}</td>
+                        <td>${efficiency}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                    </tbody>
+                </table>
+                <div class="alert alert-success">
+                    <strong>Рекомендация:</strong> Для данного массива лучше всего подходит <strong>${results[0].name}</strong>
+                </div>
+            `;
+
+            document.getElementById('comparisonResults').innerHTML = tableHtml;
+        }
+
+        // Экспорт данных
+        function exportResult(format) {
+            if (!sortingStats.algorithm) {
+                showAlert('Сначала выполните сортировку', 'error');
+                return;
+            }
+
+            const data = {
+                originalArray: originalArray,
+                sortedArray: currentArray,
+                algorithm: sortingStats.algorithm,
+                statistics: sortingStats,
+                timestamp: new Date().toISOString()
+            };
+
+            if (format === 'json') {
+                downloadFile(JSON.stringify(data, null, 2), 'sorting_result.json', 'application/json');
+            } else if (format === 'csv') {
+                const csv = convertToCSV(data);
+                downloadFile(csv, 'sorting_result.csv', 'text/csv');
+            }
+
+            showToast(`Результат экспортирован в ${format.toUpperCase()}`);
+        }
+
+        function exportArray() {
+            const input = document.getElementById('inputArray').value;
+            const array = parseArray(input);
+            
+            if (!array.length) {
+                showAlert('Введите массив для экспорта', 'error');
+                return;
+            }
+
+            const data = {
+                array: array,
+                size: array.length,
+                generated: new Date().toISOString()
+            };
+
+            downloadFile(JSON.stringify(data, null, 2), 'array_data.json', 'application/json');
+            showToast('Массив экспортирован!');
+        }
+
+        function convertToCSV(data) {
+            let csv = 'Параметр,Значение\n';
+            csv += `Алгоритм,"${data.algorithm}"\n`;
+            csv += `Исходный массив,"[${data.originalArray.join(', ')}]"\n`;
+            csv += `Отсортированный массив,"[${data.sortedArray.join(', ')}]"\n`;
+            csv += `Сравнения,${data.statistics.comparisons}\n`;
+            csv += `Перестановки,${data.statistics.swaps}\n`;
+            csv += `Время выполнения,${data.statistics.executionTime}мс\n`;
+            csv += `Дата,${data.timestamp}\n`;
+            return csv;
+        }
+
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            document.getElementById('inputArray').value = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stepsContainer').innerHTML = '';
+            
+            currentArray = [];
+            originalArray = [];
+            visualizationSteps = [];
+            sortingStats = {};
+            
+            resetVisualization();
+            showToast('Все данные очищены');
+        }
+
+        // События клавиатуры
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.id === 'inputArray') {
                 sortArray();
             }
-        });
-        
-        document.getElementById('sessionId').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                getResult();
+            if (e.key === 'Escape') {
+                closeComparisonModal();
             }
         });
-        
-        // Загрузка примера при загрузке страницы
-        window.addEventListener('load', function() {
-            document.getElementById('inputArray').value = '64, 34, 25, 12, 22, 11, 90';
-        });
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('comparisonModal');
+            if (event.target === modal) {
+                closeComparisonModal();
+            }
+        }
     </script>
 </body>
 </html>

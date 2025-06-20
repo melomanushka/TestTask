@@ -27,7 +27,161 @@ class SortingAlgorithms {
           swapped = true;
           
           // Record step
-                      steps.push({
+          steps.push({
+            array: [...sortedArray],
+            swapIndices: [j, j + 1],
+            comparisonCount
+          });
+        }
+      }
+      
+      // Early termination if no swaps occurred
+      if (!swapped) break;
+    }
+    
+    const executionTime = Date.now() - startTime;
+    
+    return {
+      steps,
+      sortedArray,
+      executionTime,
+      algorithmType: 'bubble',
+      totalComparisons: comparisonCount
+    };
+  }
+
+  // Quick Sort implementation
+  static quickSort(arr) {
+    const startTime = Date.now();
+    const steps = [];
+    const sortedArray = [...arr];
+    let comparisonCount = 0;
+    
+    // Add initial state
+    steps.push({
+      array: [...sortedArray],
+      swapIndices: null,
+      comparisonCount
+    });
+
+    const quickSortHelper = (array, low, high) => {
+      if (low < high) {
+        const pivotIndex = partition(array, low, high);
+        quickSortHelper(array, low, pivotIndex - 1);
+        quickSortHelper(array, pivotIndex + 1, high);
+      }
+    };
+
+    const partition = (array, low, high) => {
+      const pivot = array[high];
+      let i = low - 1;
+
+      for (let j = low; j < high; j++) {
+        comparisonCount++;
+        if (array[j] < pivot) {
+          i++;
+          if (i !== j) {
+            [array[i], array[j]] = [array[j], array[i]];
+            steps.push({
+              array: [...array],
+              swapIndices: [i, j],
+              comparisonCount
+            });
+          }
+        }
+      }
+
+      if (i + 1 !== high) {
+        [array[i + 1], array[high]] = [array[high], array[i + 1]];
+        steps.push({
+          array: [...array],
+          swapIndices: [i + 1, high],
+          comparisonCount
+        });
+      }
+
+      return i + 1;
+    };
+
+    quickSortHelper(sortedArray, 0, sortedArray.length - 1);
+    
+    const executionTime = Date.now() - startTime;
+    
+    return {
+      steps,
+      sortedArray,
+      executionTime,
+      algorithmType: 'quick',
+      totalComparisons: comparisonCount
+    };
+  }
+
+  // Selection Sort
+  static selectionSort(arr) {
+    const startTime = Date.now();
+    const steps = [];
+    const sortedArray = [...arr];
+    let comparisonCount = 0;
+    
+    steps.push({
+      array: [...sortedArray],
+      swapIndices: null,
+      comparisonCount
+    });
+
+    for (let i = 0; i < sortedArray.length - 1; i++) {
+      let minIndex = i;
+      
+      for (let j = i + 1; j < sortedArray.length; j++) {
+        comparisonCount++;
+        if (sortedArray[j] < sortedArray[minIndex]) {
+          minIndex = j;
+        }
+      }
+      
+      if (minIndex !== i) {
+        [sortedArray[i], sortedArray[minIndex]] = [sortedArray[minIndex], sortedArray[i]];
+        steps.push({
+          array: [...sortedArray],
+          swapIndices: [i, minIndex],
+          comparisonCount
+        });
+      }
+    }
+    
+    const executionTime = Date.now() - startTime;
+    
+    return {
+      steps,
+      sortedArray,
+      executionTime,
+      algorithmType: 'selection',
+      totalComparisons: comparisonCount
+    };
+  }
+
+  // Insertion Sort
+  static insertionSort(arr) {
+    const startTime = Date.now();
+    const steps = [];
+    const sortedArray = [...arr];
+    let comparisonCount = 0;
+    
+    steps.push({
+      array: [...sortedArray],
+      swapIndices: null,
+      comparisonCount
+    });
+
+    for (let i = 1; i < sortedArray.length; i++) {
+      const key = sortedArray[i];
+      let j = i - 1;
+      
+      while (j >= 0) {
+        comparisonCount++;
+        if (sortedArray[j] > key) {
+          sortedArray[j + 1] = sortedArray[j];
+          steps.push({
             array: [...sortedArray],
             swapIndices: [j, j + 1],
             comparisonCount
@@ -191,157 +345,3 @@ class SortingAlgorithms {
 }
 
 module.exports = SortingAlgorithms;
-            comparisonCount
-          });
-        }
-      }
-      
-      // Early termination if no swaps occurred
-      if (!swapped) break;
-    }
-    
-    const executionTime = Date.now() - startTime;
-    
-    return {
-      steps,
-      sortedArray,
-      executionTime,
-      algorithmType: 'bubble',
-      totalComparisons: comparisonCount
-    };
-  }
-
-  // Quick Sort implementation
-  static quickSort(arr) {
-    const startTime = Date.now();
-    const steps = [];
-    const sortedArray = [...arr];
-    let comparisonCount = 0;
-    
-    // Add initial state
-    steps.push({
-      array: [...sortedArray],
-      swapIndices: null,
-      comparisonCount
-    });
-
-    const quickSortHelper = (array, low, high) => {
-      if (low < high) {
-        const pivotIndex = partition(array, low, high);
-        quickSortHelper(array, low, pivotIndex - 1);
-        quickSortHelper(array, pivotIndex + 1, high);
-      }
-    };
-
-    const partition = (array, low, high) => {
-      const pivot = array[high];
-      let i = low - 1;
-
-      for (let j = low; j < high; j++) {
-        comparisonCount++;
-        if (array[j] < pivot) {
-          i++;
-          if (i !== j) {
-            [array[i], array[j]] = [array[j], array[i]];
-            steps.push({
-              array: [...array],
-              swapIndices: [i, j],
-              comparisonCount
-            });
-          }
-        }
-      }
-
-      if (i + 1 !== high) {
-        [array[i + 1], array[high]] = [array[high], array[i + 1]];
-        steps.push({
-          array: [...array],
-          swapIndices: [i + 1, high],
-          comparisonCount
-        });
-      }
-
-      return i + 1;
-    };
-
-    quickSortHelper(sortedArray, 0, sortedArray.length - 1);
-    
-    const executionTime = Date.now() - startTime;
-    
-    return {
-      steps,
-      sortedArray,
-      executionTime,
-      algorithmType: 'quick',
-      totalComparisons: comparisonCount
-    };
-  }
-
-  // Selection Sort
-  static selectionSort(arr) {
-    const startTime = Date.now();
-    const steps = [];
-    const sortedArray = [...arr];
-    let comparisonCount = 0;
-    
-    steps.push({
-      array: [...sortedArray],
-      swapIndices: null,
-      comparisonCount
-    });
-
-    for (let i = 0; i < sortedArray.length - 1; i++) {
-      let minIndex = i;
-      
-      for (let j = i + 1; j < sortedArray.length; j++) {
-        comparisonCount++;
-        if (sortedArray[j] < sortedArray[minIndex]) {
-          minIndex = j;
-        }
-      }
-      
-      if (minIndex !== i) {
-        [sortedArray[i], sortedArray[minIndex]] = [sortedArray[minIndex], sortedArray[i]];
-        steps.push({
-          array: [...sortedArray],
-          swapIndices: [i, minIndex],
-          comparisonCount
-        });
-      }
-    }
-    
-    const executionTime = Date.now() - startTime;
-    
-    return {
-      steps,
-      sortedArray,
-      executionTime,
-      algorithmType: 'selection',
-      totalComparisons: comparisonCount
-    };
-  }
-
-  // Insertion Sort
-  static insertionSort(arr) {
-    const startTime = Date.now();
-    const steps = [];
-    const sortedArray = [...arr];
-    let comparisonCount = 0;
-    
-    steps.push({
-      array: [...sortedArray],
-      swapIndices: null,
-      comparisonCount
-    });
-
-    for (let i = 1; i < sortedArray.length; i++) {
-      const key = sortedArray[i];
-      let j = i - 1;
-      
-      while (j >= 0) {
-        comparisonCount++;
-        if (sortedArray[j] > key) {
-          sortedArray[j + 1] = sortedArray[j];
-          steps.push({
-            array: [...sortedArray],
-            swapIndices: [j, j + 1],
