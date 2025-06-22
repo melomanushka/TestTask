@@ -1,6 +1,5 @@
 const logger = require('../config/logger');
 
-// Custom error class
 class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
@@ -11,14 +10,12 @@ class AppError extends Error {
   }
 }
 
-// Async error wrapper
 const asyncHandler = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-// Database error handler
 const handleDatabaseError = (error) => {
   if (error.name === 'SequelizeConnectionError') {
     return new AppError('Ошибка подключения к базе данных', 503);
@@ -40,12 +37,10 @@ const handleDatabaseError = (error) => {
   return new AppError('Ошибка базы данных', 500);
 };
 
-// Main error handling middleware
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
   logger.error('Error occurred:', {
     message: error.message,
     stack: error.stack,
@@ -55,18 +50,15 @@ const errorHandler = (err, req, res, next) => {
     userAgent: req.get('User-Agent')
   });
 
-  // Database errors
   if (err.name && err.name.startsWith('Sequelize')) {
     error = handleDatabaseError(err);
   }
 
-  // Validation errors (from Joi)
   if (err.isJoi) {
     const message = err.details.map(detail => detail.message).join('. ');
     error = new AppError(message, 400);
   }
 
-  // JWT errors
   if (err.name === 'JsonWebTokenError') {
     error = new AppError('Неверный токен', 401);
   }
@@ -75,7 +67,6 @@ const errorHandler = (err, req, res, next) => {
     error = new AppError('Токен истек', 401);
   }
 
-  // Default to 500 server error
   if (!error.statusCode) {
     error.statusCode = 500;
     error.message = 'Внутренняя ошибка сервера';
@@ -87,7 +78,6 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-// 404 handler
 const notFound = (req, res, next) => {
   const error = new AppError(`Маршрут ${req.originalUrl} не найден`, 404);
   next(error);

@@ -6,3 +6,7 @@
 {"level":"info","message":"GET /health 200 119 - 5.331 ms","service":"bubble-sort-api","timestamp":"2025-06-20 20:27:43"}
 {"ip":"::1","level":"error","message":"Error occurred: Маршрут /favicon.ico не найден","method":"GET","service":"bubble-sort-api","timestamp":"2025-06-20 20:27:43","url":"/favicon.ico","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}
 {"level":"info","message":"GET /favicon.ico 404 57 - 1.289 ms","service":"bubble-sort-api","timestamp":"2025-06-20 20:27:43"}
+{"level":"info","message":"Database connection established successfully","service":"bubble-sort-api","timestamp":"2025-06-21 22:18:44"}
+{"level":"info","message":"Database synchronized successfully","service":"bubble-sort-api","timestamp":"2025-06-21 22:18:44"}
+{"environment":"development","level":"info","message":"Server started successfully","pid":40156,"port":"5050","service":"bubble-sort-api","timestamp":"2025-06-21 22:18:44"}
+{"level":"info","message":"Received SIGINT. Starting graceful shutdown...","service":"bubble-sort-api","timestamp":"2025-06-21 22:20:22"}

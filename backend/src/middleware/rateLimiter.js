@@ -1,9 +1,8 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger');
 
-// General rate limiter
 const generalLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000, // 1 minute
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000, 
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10,
   message: {
     error: 'Слишком много запросов с вашего IP. Попробуйте позже.',
@@ -25,16 +24,14 @@ const generalLimiter = rateLimit({
   }
 });
 
-// Stricter limiter for sort operations (more resource intensive)
 const sortLimiter = rateLimit({
-  windowMs: 2 * 60 * 1000, // 2 minutes
-  max: 5, // 5 sort operations per 2 minutes
+  windowMs: 2 * 60 * 1000, 
+  max: 5, 
   message: {
     error: 'Слишком много операций сортировки. Подождите немного.',
     retryAfter: 120
   },
   keyGenerator: (req) => {
-    // Use IP + user agent for more strict limiting of sort operations
     return `${req.ip}-${req.get('User-Agent')}`;
   },
   handler: (req, res) => {
@@ -51,10 +48,9 @@ const sortLimiter = rateLimit({
   }
 });
 
-// Lenient limiter for read operations
 const readLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 read operations per minute
+  windowMs: 60 * 1000, 
+  max: 30,
   message: {
     error: 'Слишком много запросов на чтение. Подождите немного.',
     retryAfter: 60

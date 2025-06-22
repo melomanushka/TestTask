@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-// Session model
 const Session = sequelize.define('Session', {
   id: {
     type: DataTypes.INTEGER,
@@ -56,7 +55,7 @@ const Session = sequelize.define('Session', {
     }
   },
   executionTime: {
-    type: DataTypes.INTEGER, // in milliseconds
+    type: DataTypes.INTEGER, 
     allowNull: true
   },
   clientInfo: {
@@ -79,7 +78,6 @@ const Session = sequelize.define('Session', {
   ],
   hooks: {
     beforeCreate: (session, options) => {
-      // Validate array sizes match
       if (session.originalArray.length !== session.sortedArray.length) {
         throw new Error('Original and sorted arrays must have the same length');
       }
@@ -87,7 +85,6 @@ const Session = sequelize.define('Session', {
   }
 });
 
-// Step model
 const Step = sequelize.define('Step', {
   id: {
     type: DataTypes.INTEGER,
@@ -142,7 +139,6 @@ const Step = sequelize.define('Step', {
   ]
 });
 
-// Algorithm Performance model (for analytics)
 const AlgorithmPerformance = sequelize.define('AlgorithmPerformance', {
   id: {
     type: DataTypes.INTEGER,
@@ -182,7 +178,6 @@ const AlgorithmPerformance = sequelize.define('AlgorithmPerformance', {
   ]
 });
 
-// Associations
 Session.hasMany(Step, { 
   foreignKey: 'sessionId', 
   sourceKey: 'sessionId',
@@ -196,7 +191,6 @@ Step.belongsTo(Session, {
   as: 'session'
 });
 
-// Class methods for Session
 Session.findBySessionId = function(sessionId) {
   return this.findOne({
     where: { sessionId },

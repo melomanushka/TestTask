@@ -1,7 +1,6 @@
 const Joi = require('joi');
 const logger = require('../config/logger');
 
-// Validation schemas
 const schemas = {
   sortArray: Joi.object({
     numbers: Joi.array()
@@ -39,7 +38,6 @@ const schemas = {
   })
 };
 
-// Validation middleware factory
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req[property], {
@@ -64,27 +62,22 @@ const validate = (schema, property = 'body') => {
       });
     }
 
-    // Replace the property with validated and sanitized data
     req[property] = value;
     next();
   };
 };
 
-// Custom validation functions
 const validateArrayElements = (req, res, next) => {
   const { numbers } = req.body;
   
-  // Check for duplicates if needed
   const uniqueNumbers = [...new Set(numbers)];
   if (uniqueNumbers.length !== numbers.length) {
     logger.info('Array contains duplicates', { 
       originalLength: numbers.length, 
       uniqueLength: uniqueNumbers.length 
     });
-    // We allow duplicates, just log for analytics
   }
 
-  // Check for extreme values that might cause performance issues
   const hasExtremeValues = numbers.some(num => Math.abs(num) > 1000000);
   if (hasExtremeValues) {
     logger.warn('Array contains extreme values', { numbers: numbers.slice(0, 10) });

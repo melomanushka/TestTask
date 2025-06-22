@@ -8,13 +8,11 @@ const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 
-// Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Import configurations and middleware after creating directories
 let sequelize, testConnection, logger, generalLimiter, errorHandler, notFound;
 let sortRoutes, sessionRoutes;
 
@@ -24,7 +22,6 @@ try {
   testConnection = dbConfig.testConnection;
 } catch (error) {
   console.error('Error loading database config:', error.message);
-  // Create a mock database connection for development
   sequelize = {
     sync: async () => console.log('Mock database sync'),
     close: () => console.log('Mock database close')
@@ -36,7 +33,6 @@ try {
   logger = require('./config/logger');
 } catch (error) {
   console.error('Error loading logger config:', error.message);
-  // Create a simple logger fallback
   logger = {
     info: (message, meta) => console.log(`INFO: ${message}`, meta || ''),
     error: (message, meta) => console.error(`ERROR: ${message}`, meta || ''),
@@ -49,7 +45,6 @@ try {
   generalLimiter = rateLimiter.generalLimiter;
 } catch (error) {
   console.error('Error loading rate limiter:', error.message);
-  // Create a mock rate limiter
   generalLimiter = (req, res, next) => next();
 }
 
@@ -59,7 +54,6 @@ try {
   notFound = errorHandlers.notFound;
 } catch (error) {
   console.error('Error loading error handlers:', error.message);
-  // Create fallback error handlers
   notFound = (req, res, next) => {
     res.status(404).json({ error: 'Not Found' });
   };
@@ -69,7 +63,6 @@ try {
   };
 }
 
-// Import routes with error handling
 try {
   sortRoutes = require('./routes/sort');
 } catch (error) {
@@ -89,16 +82,13 @@ try {
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-// Trust proxy for rate limiting and IP detection
 app.set('trust proxy', 1);
 
-// Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Allow for development
+  contentSecurityPolicy: false, 
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['https://yourdomain.com'])
@@ -108,14 +98,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Compression middleware
 app.use(compression());
 
-// Request parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Custom morgan format for structured logging
 morgan.token('id', (req) => req.ip);
 const morganFormat = process.env.NODE_ENV === 'production'
   ? 'combined'
@@ -127,10 +114,8 @@ app.use(morgan(morganFormat, {
   }
 }));
 
-// Rate limiting
 app.use(generalLimiter);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
@@ -141,7 +126,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Helper function to safely get package version
 function getPackageVersion() {
   try {
     return require('../package.json').version;
@@ -150,7 +134,6 @@ function getPackageVersion() {
   }
 }
 
-// API info endpoint
 app.get('/api/info', (req, res) => {
   res.json({
     name: 'Bubble Sort API',
@@ -178,11 +161,9 @@ app.get('/api/info', (req, res) => {
   });
 });
 
-// API routes
 app.use('/api/sort', sortRoutes);
 app.use('/api/sessions', sessionRoutes);
 
-// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../frontend');
   if (fs.existsSync(frontendPath)) {
@@ -199,17 +180,13 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
-// 404 handler
 app.use(notFound);
 
-// Error handling middleware
 app.use(errorHandler);
 
-// Graceful shutdown handler
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
   
-  // Close database connection
   if (sequelize && sequelize.close) {
     sequelize.close();
   }
@@ -220,54 +197,45 @@ const gracefulShutdown = (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Unhandled promise rejection handler
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection:', err);
-  // Don't exit immediately in development
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 });
 
-// Uncaught exception handler
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception:', err);
-  // Don't exit immediately in development
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 });
 
-// Initialize database and start server
 const startServer = async () => {
   try {
-    // Test database connection
     if (testConnection) {
       await testConnection();
     }
     
-    // Sync database models
     if (sequelize && sequelize.sync) {
       await sequelize.sync({ 
         alter: process.env.NODE_ENV === 'development',
-        force: false // Never force drop tables
+        force: false 
       });
       logger.info('Database synchronized successfully');
     }
     
-    // Start HTTP server
     const server = app.listen(PORT, () => {
       logger.info(`Server started successfully`, {
         port: PORT,
         environment: process.env.NODE_ENV || 'development',
         pid: process.pid
       });
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 API documentation available at http://localhost:${PORT}/api/info`);
-      console.log(`❤️  Health check available at http://localhost:${PORT}/health`);
+      console.log(`Server running on port ${PORT}`);
+      console.log(`API documentation available at http://localhost:${PORT}/api/info`);
+      console.log(`Health check available at http://localhost:${PORT}/health`);
     });
 
-    // Handle server shutdown
     const handleShutdown = () => {
       logger.info('Shutting down gracefully');
       server.close(() => {
@@ -278,7 +246,6 @@ const startServer = async () => {
         process.exit(0);
       });
       
-      // Force close after 10 seconds
       setTimeout(() => {
         logger.error('Could not close connections in time, forcefully shutting down');
         process.exit(1);
@@ -295,5 +262,4 @@ const startServer = async () => {
   }
 };
 
-// Start the application
 startServer();

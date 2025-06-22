@@ -9,7 +9,6 @@ const logger = require('../config/logger');
 
 const router = express.Router();
 
-// POST /sort - Sort array with specified algorithm
 router.post('/', 
   sortLimiter,
   validate(schemas.sortArray),
@@ -22,22 +21,19 @@ router.post('/',
       timestamp: new Date().toISOString()
     };
 
-    // Perform sorting
     const sortResult = SortingAlgorithms.sort(numbers, algorithm);
     const sessionId = uuidv4();
 
-    // Save session to database
     const session = await Session.create({
       sessionId,
       originalArray: numbers,
       sortedArray: sortResult.sortedArray,
-      totalSteps: sortResult.steps.length - 1, // Exclude initial state
+      totalSteps: sortResult.steps.length - 1, 
       algorithmType: sortResult.algorithmType,
       executionTime: sortResult.executionTime,
       clientInfo
     });
 
-    // Save steps to database
     const stepRecords = sortResult.steps.map((step, index) => ({
       sessionId,
       stepNumber: index,
@@ -48,7 +44,6 @@ router.post('/',
 
     await Step.bulkCreate(stepRecords);
 
-    // Save performance data for analytics
     await AlgorithmPerformance.create({
       algorithmType: sortResult.algorithmType,
       arraySize: numbers.length,
@@ -56,7 +51,6 @@ router.post('/',
       stepCount: sortResult.steps.length - 1
     });
 
-    // Get algorithm complexity info
     const complexity = SortingAlgorithms.getAlgorithmComplexity(algorithm, numbers.length);
 
     res.status(201).json({
@@ -72,7 +66,6 @@ router.post('/',
   })
 );
 
-// GET /sort/:sessionId - Get sorting result by session ID
 router.get('/:sessionId',
   readLimiter,
   validate(schemas.sessionId, 'params'),
@@ -103,7 +96,6 @@ router.get('/:sessionId',
   })
 );
 
-// GET /sort/:sessionId/steps - Get all sorting steps
 router.get('/:sessionId/steps',
   readLimiter,
   validate(schemas.sessionId, 'params'),
@@ -111,7 +103,6 @@ router.get('/:sessionId/steps',
     const { sessionId } = req.params;
     const { page = 1, limit = 100 } = req.query;
 
-    // Verify session exists
     const session = await Session.findOne({
       where: { sessionId },
       attributes: ['sessionId', 'totalSteps', 'algorithmType']
@@ -121,7 +112,6 @@ router.get('/:sessionId/steps',
       throw new AppError('Сессия не найдена', 404);
     }
 
-    // Get steps with pagination
     const offset = (page - 1) * limit;
     const steps = await Step.findAndCountAll({
       where: { sessionId },
@@ -153,7 +143,6 @@ router.get('/:sessionId/steps',
   })
 );
 
-// GET /sort/:sessionId/compare - Compare with other algorithms
 router.get('/:sessionId/compare',
   readLimiter,
   validate(schemas.sessionId, 'params'),
@@ -173,7 +162,6 @@ router.get('/:sessionId/compare',
     const algorithmList = algorithms.split(',').map(a => a.trim().toLowerCase());
     const comparisons = {};
 
-    // Run each algorithm
     for (const algorithm of algorithmList) {
       try {
         const result = SortingAlgorithms.sort(session.originalArray, algorithm);

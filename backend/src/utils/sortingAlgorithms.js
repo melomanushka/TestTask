@@ -1,14 +1,12 @@
 const logger = require('../config/logger');
 
 class SortingAlgorithms {
-  // Bubble Sort with detailed step tracking
   static bubbleSort(arr) {
     const startTime = Date.now();
     const steps = [];
     const sortedArray = [...arr];
     let comparisonCount = 0;
     
-    // Add initial state
     steps.push({
       array: [...sortedArray],
       swapIndices: null,
@@ -22,11 +20,9 @@ class SortingAlgorithms {
         comparisonCount++;
         
         if (sortedArray[j] > sortedArray[j + 1]) {
-          // Swap elements
           [sortedArray[j], sortedArray[j + 1]] = [sortedArray[j + 1], sortedArray[j]];
           swapped = true;
           
-          // Record step
           steps.push({
             array: [...sortedArray],
             swapIndices: [j, j + 1],
@@ -35,7 +31,6 @@ class SortingAlgorithms {
         }
       }
       
-      // Early termination if no swaps occurred
       if (!swapped) break;
     }
     
@@ -50,14 +45,12 @@ class SortingAlgorithms {
     };
   }
 
-  // Quick Sort implementation
   static quickSort(arr) {
     const startTime = Date.now();
     const steps = [];
     const sortedArray = [...arr];
     let comparisonCount = 0;
     
-    // Add initial state
     steps.push({
       array: [...sortedArray],
       swapIndices: null,
@@ -116,7 +109,6 @@ class SortingAlgorithms {
     };
   }
 
-  // Selection Sort
   static selectionSort(arr) {
     const startTime = Date.now();
     const steps = [];
@@ -160,7 +152,6 @@ class SortingAlgorithms {
     };
   }
 
-  // Insertion Sort
   static insertionSort(arr) {
     const startTime = Date.now();
     const steps = [];
@@ -213,10 +204,8 @@ class SortingAlgorithms {
     };
   }
 
-  // Main sorting function that delegates to specific algorithms
   static sort(array, algorithm = 'bubble') {
     try {
-      // Input validation
       if (!Array.isArray(array)) {
         throw new Error('Input must be an array');
       }
@@ -229,7 +218,6 @@ class SortingAlgorithms {
         throw new Error(`Array size exceeds maximum limit of ${process.env.MAX_ARRAY_SIZE || 1000}`);
       }
 
-      // Check if array is already sorted
       const isAlreadySorted = array.every((val, i) => i === 0 || array[i - 1] <= val);
       if (isAlreadySorted) {
         logger.info('Array is already sorted', { algorithm, arraySize: array.length });
@@ -242,7 +230,6 @@ class SortingAlgorithms {
         };
       }
 
-      // Log sorting operation
       logger.info('Starting sort operation', {
         algorithm,
         arraySize: array.length,
@@ -287,7 +274,6 @@ class SortingAlgorithms {
     }
   }
 
-  // Utility function to generate performance statistics
   static getAlgorithmComplexity(algorithm, arraySize) {
     const complexities = {
       bubble: {
@@ -319,10 +305,9 @@ class SortingAlgorithms {
     return complexities[algorithm.toLowerCase()] || null;
   }
 
-  // Estimate execution time based on array size and algorithm
   static estimateExecutionTime(algorithm, arraySize) {
     const baseTimes = {
-      bubble: 0.001, // ms per operation
+      bubble: 0.001, 
       quick: 0.0001,
       selection: 0.0008,
       insertion: 0.0005
@@ -335,7 +320,7 @@ class SortingAlgorithms {
       case 'selection':
         return Math.ceil(baseTime * arraySize * arraySize);
       case 'insertion':
-        return Math.ceil(baseTime * arraySize * arraySize * 0.5); // Better average case
+        return Math.ceil(baseTime * arraySize * arraySize * 0.5);
       case 'quick':
         return Math.ceil(baseTime * arraySize * Math.log2(arraySize));
       default:

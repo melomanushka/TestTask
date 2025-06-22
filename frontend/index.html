@@ -645,7 +645,6 @@
         <div id="stepsContainer"></div>
     </div>
 
-    <!-- Modal для сравнения алгоритмов -->
     <div id="comparisonModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeComparisonModal()">&times;</span>
@@ -664,14 +663,12 @@
         let visualizationInterval = null;
         let sortingStats = {};
 
-        // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             loadTheme();
             setupSpeedControl();
             updateVisualization();
         });
 
-        // Тема
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -679,7 +676,6 @@
             document.documentElement.setAttribute('data-theme', newTheme);
             document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
             
-            // Сохраняем тему в переменной (без localStorage)
             window.currentTheme = newTheme;
         }
 
@@ -698,7 +694,6 @@
             });
         }
 
-        // Утилиты
         function parseArray(input) {
             if (!input.trim()) return [];
             return input.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
@@ -728,7 +723,6 @@
             }, 3000);
         }
 
-        // Генерация массивов
         function generateRandomArray() {
             const size = Math.floor(Math.random() * 15) + 8;
             const array = [];
@@ -772,7 +766,6 @@
             showToast(`Сгенерирован массив типа "${type}"!`);
         }
 
-        // Алгоритмы сортировки с записью шагов
         function bubbleSort(arr, recordSteps = false) {
             const steps = [];
             const result = [...arr];
@@ -953,7 +946,6 @@
             return { sorted: result, steps, stats: { comparisons, swaps } };
         }
 
-        // Основная функция сортировки
         function sortArray() {
             const input = document.getElementById('inputArray').value;
             const algorithm = document.getElementById('algorithm').value;
@@ -1009,7 +1001,6 @@
                 displayResults(result.sorted, result.stats, executionTime, algorithm);
                 showToast('Сортировка завершена!');
                 
-                // Обновляем визуализацию
                 updateVisualization();
             }, 500);
         }
@@ -1114,7 +1105,6 @@
             stepsContainer.innerHTML = stepsHtml;
         }
 
-        // Визуализация
         function updateVisualization() {
             const container = document.getElementById('visualizationContainer');
             const array = currentArray.length ? currentArray : parseArray(document.getElementById('inputArray').value);
@@ -1201,7 +1191,7 @@
             
             currentStepIndex++;
             const speed = parseInt(document.getElementById('speedSlider').value);
-            const delay = 1100 - (speed * 100); // Обратная зависимость для скорости
+            const delay = 1100 - (speed * 100); 
             
             visualizationInterval = setTimeout(runVisualization, delay);
         }
@@ -1209,12 +1199,10 @@
         function executeVisualizationStep(step) {
             const bars = document.querySelectorAll('.bar');
             
-            // Сброс предыдущих стилей
             bars.forEach(bar => {
                 bar.classList.remove('comparing', 'swapping', 'sorted');
             });
 
-            // Обновляем массив и высоты
             currentArray = [...step.array];
             const maxValue = Math.max(...currentArray);
             
@@ -1226,7 +1214,6 @@
                 bar.textContent = value;
             });
 
-            // Применяем стили для текущего шага
             if (step.indices) {
                 step.indices.forEach(index => {
                     if (bars[index]) {
@@ -1235,7 +1222,6 @@
                 });
             }
 
-            // Подсвечиваем текущий шаг в списке
             const steps = document.querySelectorAll('.step');
             steps.forEach(s => s.classList.remove('current'));
             const currentStep = document.querySelector(`[data-step="${currentStepIndex}"]`);
@@ -1262,7 +1248,6 @@
             }
         }
 
-        // Сравнение алгоритмов
         function showComparisonModal() {
             const modal = document.getElementById('comparisonModal');
             modal.style.display = 'block';
@@ -1309,7 +1294,6 @@
                 });
             });
 
-            // Сортируем результаты по времени выполнения
             results.sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
 
             let tableHtml = `
@@ -1356,7 +1340,6 @@
             document.getElementById('comparisonResults').innerHTML = tableHtml;
         }
 
-        // Экспорт данных
         function exportResult(format) {
             if (!sortingStats.algorithm) {
                 showAlert('Сначала выполните сортировку', 'error');
@@ -1438,7 +1421,6 @@
             showToast('Все данные очищены');
         }
 
-        // События клавиатуры
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && e.target.id === 'inputArray') {
                 sortArray();
@@ -1448,7 +1430,6 @@
             }
         });
 
-        // Закрытие модального окна при клике вне его
         window.onclick = function(event) {
             const modal = document.getElementById('comparisonModal');
             if (event.target === modal) {

@@ -8,7 +8,6 @@ const { Op } = require('sequelize');
 
 const router = express.Router();
 
-// GET /sessions - Get all sessions with pagination
 router.get('/',
   readLimiter,
   validate(schemas.pagination, 'query'),
@@ -29,7 +28,6 @@ router.get('/',
   })
 );
 
-// GET /sessions/stats - Get statistics about sessions
 router.get('/stats',
   readLimiter,
   asyncHandler(async (req, res) => {
@@ -37,7 +35,6 @@ router.get('/stats',
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    // Get session counts by algorithm
     const algorithmStats = await Session.findAll({
       attributes: [
         'algorithmType',
@@ -54,7 +51,6 @@ router.get('/stats',
       raw: true
     });
 
-    // Get daily session counts
     const dailyStats = await Session.findAll({
       attributes: [
         [Session.sequelize.fn('DATE', Session.sequelize.col('createdAt')), 'date'],
@@ -70,7 +66,6 @@ router.get('/stats',
       raw: true
     });
 
-    // Get array size distribution
     const arraySizeStats = await Session.findAll({
       attributes: [
         [Session.sequelize.fn('array_length', Session.sequelize.col('originalArray'), 1), 'arraySize'],
@@ -87,7 +82,6 @@ router.get('/stats',
       limit: 20
     });
 
-    // Total sessions count
     const totalSessions = await Session.count({
       where: {
         createdAt: {
@@ -96,7 +90,6 @@ router.get('/stats',
       }
     });
 
-    // Performance metrics
     const performanceStats = await AlgorithmPerformance.findAll({
       attributes: [
         'algorithmType',
@@ -152,14 +145,12 @@ router.get('/stats',
   })
 );
 
-// DELETE /sessions/cleanup - Clean up old sessions
 router.delete('/cleanup',
   asyncHandler(async (req, res) => {
     const { hours = 24, dryRun = false } = req.query;
     const hoursOld = parseInt(hours);
 
     if (dryRun === 'true') {
-      // Just count what would be deleted
       const cutoffDate = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
       const count = await Session.count({
         where: {
@@ -193,7 +184,6 @@ router.delete('/cleanup',
   })
 );
 
-// GET /sessions/search - Search sessions
 router.get('/search',
   readLimiter,
   asyncHandler(async (req, res) => {
@@ -227,7 +217,6 @@ router.get('/search',
       if (maxExecutionTime) whereConditions.executionTime[Op.lte] = parseInt(maxExecutionTime);
     }
 
-    // Array size filtering requires raw SQL
     let arraySizeCondition = '';
     if (minArraySize || maxArraySize) {
       const conditions = [];
@@ -272,7 +261,6 @@ router.get('/search',
   })
 );
 
-// DELETE /sessions/:sessionId - Delete specific session
 router.delete('/:sessionId',
   validate(schemas.sessionId, 'params'),
   asyncHandler(async (req, res) => {
