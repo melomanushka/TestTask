@@ -1260,85 +1260,104 @@
         }
 
         function compareAlgorithms() {
-            const input = document.getElementById('inputArray').value;
-            const array = parseArray(input);
-            
-            if (!array.length) {
-                document.getElementById('comparisonResults').innerHTML = `
-                    <div class="alert alert-error">
-                        Пожалуйста, введите массив для сравнения алгоритмов
-                    </div>
-                `;
-                return;
-            }
-
-            const algorithms = [
-                { key: 'bubble', name: 'Пузырьковая сортировка', func: bubbleSort },
-                { key: 'selection', name: 'Сортировка выбором', func: selectionSort },
-                { key: 'insertion', name: 'Сортировка вставками', func: insertionSort },
-                { key: 'quick', name: 'Быстрая сортировка', func: quickSort }
-            ];
-
-            const results = [];
-
-            algorithms.forEach(alg => {
-                const startTime = performance.now();
-                const result = alg.func([...array], false);
-                const endTime = performance.now();
-                
-                results.push({
-                    name: alg.name,
-                    time: (endTime - startTime).toFixed(2),
-                    comparisons: result.stats?.comparisons || 0,
-                    swaps: result.stats?.swaps || 0
-                });
-            });
-
-            results.sort((a, b) => parseFloat(a.time) - parseFloat(b.time));
-
-            let tableHtml = `
-                <div class="alert alert-info">
-                    <strong>Тестовый массив:</strong> [${array.join(', ')}] (${array.length} элементов)
-                </div>
-                <table class="comparison-table">
-                    <thead>
-                        <tr>
-                            <th>Алгоритм</th>
-                            <th>Время (мс)</th>
-                            <th>Сравнения</th>
-                            <th>Перестановки</th>
-                            <th>Эффективность</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            results.forEach((result, index) => {
-                const efficiency = index === 0 ? '🥇 Лучший' : 
-                                index === 1 ? '🥈 Хороший' : 
-                                index === 2 ? '🥉 Средний' : '📊 Базовый';
-                
-                tableHtml += `
-                    <tr>
-                        <td><strong>${result.name}</strong></td>
-                        <td>${result.time}</td>
-                        <td>${result.comparisons}</td>
-                        <td>${result.swaps}</td>
-                        <td>${efficiency}</td>
-                    </tr>
-                `;
-            });
-
-            tableHtml += `
-                    </tbody>
-                </table>
-                <div class="alert alert-success">
-                    <strong>Рекомендация:</strong> Для данного массива лучше всего подходит <strong>${results[0].name}</strong>
+        const input = document.getElementById('inputArray').value;
+        const array = parseArray(input);
+        
+        if (!array.length) {
+            document.getElementById('comparisonResults').innerHTML = `
+                <div class="alert alert-error">
+                    Пожалуйста, введите массив для сравнения алгоритмов
                 </div>
             `;
-
-            document.getElementById('comparisonResults').innerHTML = tableHtml;
+            return;
         }
+
+        const algorithms = [
+            { key: 'bubble', name: 'Пузырьковая сортировка', func: bubbleSort },
+            { key: 'selection', name: 'Сортировка выбором', func: selectionSort },
+            { key: 'insertion', name: 'Сортировка вставками', func: insertionSort },
+            { key: 'quick', name: 'Быстрая сортировка', func: quickSort }
+        ];
+
+        const results = [];
+
+        algorithms.forEach(alg => {
+            const startTime = performance.now();
+            const result = alg.func([...array], false);
+            const endTime = performance.now();
+            
+            const timeMs = endTime - startTime;
+            const comparisons = result.stats?.comparisons || 0;
+            const swaps = result.stats?.swaps || 0;
+            
+            const efficiencyScore = calculateEfficiencyScore(timeMs, comparisons, swaps, array.length);
+            
+            results.push({
+                name: alg.name,
+                key: alg.key,
+                time: timeMs.toFixed(2),
+                comparisons: comparisons,
+                swaps: swaps,
+                efficiencyScore: efficiencyScore
+            });
+        });
+
+        results.sort((a, b) => a.efficiencyScore - b.efficiencyScore);
+
+        let tableHtml = `
+            <div class="alert alert-info">
+                <strong>Тестовый массив:</strong> [${array.join(', ')}] (${array.length} элементов)
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Алгоритм</th>
+                        <th>Время (мс)</th>
+                        <th>Сравнения</th>
+                        <th>Перестановки</th>
+                        <th>Эффективность</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        results.forEach((result, index) => {
+            const efficiency = getEfficiencyLabel(index, result.key, array.length);
+            
+            tableHtml += `
+                <tr>
+                    <td><strong>${result.name}</strong></td>
+                    <td>${result.time}</td>
+                    <td>${result.comparisons}</td>
+                    <td>${result.swaps}</td>
+                    <td>${efficiency}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `
+                </tbody>
+            </table>
+            <div class="alert alert-success">
+                <strong>Рекомендация:</strong> Для данного массива лучше всего подходит <strong>${results[0].name}</strong>
+            </div>
+        `;
+
+        document.getElementById('comparisonResults').innerHTML = tableHtml;
+    }
+
+    function calculateEfficiencyScore(time, comparisons, swaps, arraySize) {
+        const normalizedTime = time / arraySize;
+        const normalizedComparisons = comparisons / (arraySize * arraySize);
+        const normalizedSwaps = swaps / (arraySize * arraySize);
+        
+        return (normalizedTime * 0.5) + (normalizedComparisons * 0.3) + (normalizedSwaps * 0.2);
+    }
+
+    function getEfficiencyLabel(index, algorithmKey, arraySize) {
+        const labels = ['🥇 Лучший', '🥈 Хороший', '🥉 Средний', '📊 Базовый'];
+        return labels[index] || '📊 Базовый';
+    }
 
         function exportResult(format) {
             if (!sortingStats.algorithm) {
